@@ -1,4 +1,14 @@
-% bap: Marmoset brain: Load data: connectivity; Coords; V1 (27/9/19)
+% B Pailthorpe, U. Sydney.  V1 (27/9/19-24)
+ % Marmoset brain: Load data: connectivity; Coords;
+% Dependencies:  data files: AdjMarmoset.csv, AdjFullMarmoset.csv, AdjMarmoset_Rescale2b.csv, 
+      % MarmosetAcrn116.csv, MarmosetAcrn139to116.csv, CoordsMarmoset.csv, MarmosetLobes116.csv,
+      % VolsMarmoset.csv, MarmosetPairListRescale2b.clu % InfoMap (c code) module ID list (.clu file).
+      % Marmoset_NodeFlow, Marmoset_FlowWt % Prob'y flow over Nodes & Links (.csv):
+        % for original or extra details & 3D vis.:
+        % Maybe: MarmosetGrayImageSlice.csv % saved image volume data, midslice,
+               % from Atlas volume (atlas.nii); nb. large files (86MB) - cf Appx.
+               % atlas_segmentation.nii (26MB);  %  needs NIFTI tools (Matlab), load_nii, etc. 
+      
 % Do these things:
 % #1,  import link data & other info: Acrn;  ??Coords (Atlas,  
 %         & midslice of vol image
@@ -9,6 +19,8 @@
 %  1.9 Investigate node vol effects on FLNe wts  (line 406)
 %  & 1.3a #Links: un-wt Deg (line 525 - out of order)
 
+%   1.8.2 Calc LinkList of pos Wts & plot hist(log10)
+
 %  2.0  LNe,1 (normalised to 1 mm^3 target vol) data (line 617 )
 %  2.1  calc LN { * denom : tot#LN - LN,i } for ea target
 %  2.2  calc LNe : new adj & wts   (Line (778
@@ -18,12 +30,12 @@
 % 4.0 examine spread of Injection Volumes [line 741]
 % 4.1 re-examine LN data (3 exp measurements): Denom ~ 0.2% variation:  OK
 
-% Apendices:  % A.0 get RGB colours for areas: from Atlas files (line 627)
+% Apendices:  % A.0 get RGB colours for areas: from Atlas files (line 958)
                %  & test & devmt codes
-%   A.1  get Atlas files  { line 680
+%   A.1  get Atlas files  { line 983
 %         calc  Node volumes, CM, from bvol 3D data  
-%   A.1.1 3D vol of areas ID# (in atlas_labels.txt)   {line 703
-%   A.1.2a:  mid slice grayscale (mm scale) from image data (line 804; And 1136 [clean code])
+%   A.1.1 3D vol of areas ID# (in atlas_labels.txt)   {line
+%   A.1.2a:  mid slice grayscale (mm scale) from image data (line ; And 1193 [clean code])
  
 % >>>>
 %% 1.0 Read data files & setup
@@ -54,6 +66,49 @@ title('Marmoset Adj: Ctx-Ctx: 116 x 55 ')
 figwidth = 1024; figheight = 896; figposition = [100, 100, figwidth, figheight];
  % A = Afull; % easier for other codes 
  % clear Afull
+ 
+%% 1.01 fully connected 55x55 subnetwork (FLNe)
+% count links (<~ 50-150)
+n55Links = length(find(Actx(:)))
+frn55 = n55Links/(55*54)
+[sii sjj v]=find(Actx);  
+Alogical=full(sparse(sii, sjj, 1));    % "mask" of selected entries, to re-form sq array of 1's.
+ % nb. need to use sparse to form the array
+A1 = Alogical.*1;  % pick out the selected entries; yields a "full" array
+figure; spy(A1) % debug
+clear Alogical sii sjj v
+length(find(A1(:))) % check 3474 links: 
+  clear sii sjj v n55Links frn55
+% length(find(A1(:)) )
+% count links (<~ 50-150)
+DegIn1=sum(A1,1)'; % i<-j;  col sum (1st index): produces a row % show as Col
+DegOut1=sum(A1,2); % i->j; row sum 
+figure; hist([DegIn1,DegOut1], 50); legend('k-In', 'k-Out')
+xlabel('Degree (link count)'); ylabel('counts')
+title('Marmoset, Degree of 55x55 binarised links')
+% wt. degree (node strength)
+DegIn55=sum(Actx,1)'; % i<-j;  col sum (1st index): produces a row % show as Col
+DegOut55=sum(Actx,2); % i->j; row sum 
+figure; hist([DegIn55,DegOut55], 50); legend('wtDeg-In', 'wtDeg-Out')
+xlabel('weight (FLNe)'); ylabel('counts')
+title('Marmoset Deg of 55x55 frn. wt. links')
+[max(DegIn55) max(DegOut55) ]
+ % nb. scale doesnt make sense, since FLN is fraction amongst 116 sources (not 55).
+
+ %% 1.1d wt Degree (FLNe)
+ % unwt deg at 1.3a - far below
+DegIn=sum(Afull,1)'; % i<-j;  col sum (1st index): produces a row % show as Col
+DegOut=sum(Afull,2); % i->j; row sum 
+ % figure; hist(DegIn); title('Marmoset wt DegIn ')
+ %figure; hist(DegOut); hold on; title('Marmoset wt DegOut '); hold off
+
+hFig=figure; hist([DegIn, DegOut]);
+legend('DegIn', 'DegOut'); title(' Marmoset brain, FLN,e: Deg-In,-Out ')
+
+ % cf un-wt Deg (#Links) at  #1.3a, line 480
+ kTot = length(find(Afull(:)))
+ 
+ clear n55Links frn55
  
  %% 1.1a read V2b ADj, based on LNe
 Anew= csvread('AdjMarmoset_Rescale2b.csv'); % read re-scaled Adj (116 x 116)
@@ -114,7 +169,7 @@ hFig=figure; hist([DegIn, DegOut]);
 legend('DegIn', 'DegOut'); title(' Marmoset brain, FLN,e: Deg-In,-Out ')
 
  % cf un-wt Deg (#Links) at  #1.3a, line 480
- kIn = length(find(Afull(:
+ kIn = length(find(Afull(:)))
  
 
  %% 1.1d.1 wt Degree (LNe)
@@ -149,7 +204,7 @@ figure; stem (DegIn1, '.'); hold on
 stem (DegOut1, 'r.');
 legend('DegIn1', 'DegOut1')
 title('Marmoset Deg of binarised links')
-%% joint plot
+% joint plot
 figure; hist([DegIn1, DegOut1], 50); xlim([2 Inf]); hold on
 title('Marmoset DegIn, Out of binarised links')
 legend('DegIn1', 'DegOut1')
@@ -370,14 +425,14 @@ flowLinkListSort=flowLinkList(wtindex,:); % now sorted by raw wt (incrs)
 flowListSort=flipud(flowLinkListSort); % Decrs. order
 
 % clear wts wtsort wtindex flowLinkList flowLinkListSort 
-%%
+%
 fprintf('top 20 flows, NodeFlow(i:out)')
 for ii=1:20 
      i=flowListSort(ii,1) ; j=flowListSort(ii,2) ;
      fprintf(' %4.0f %s %s %7.4e %4.0f %s %s \n', i, Acrn{i}, Lobes{i}, NodeFlow(i), j, Acrn{j}, Lobes{j} )
 end
 
-%%
+%
 fprintf('\n top 20 flows, i -> j: OUT links \n')
 for ii=1:20 
      i=flowListSort(ii,1) ; j=flowListSort(ii,2) ;
@@ -386,6 +441,7 @@ end
 
 
 % form dist matrix
+
 %% 1.8  Calc i-j Distance Matrix - for links that exist
 % needs Coords array - read up at #1.1, or here:
 NodeCoord=csvread('CoordsMarmoset.csv'); % nb. some absent: NaN 
@@ -409,16 +465,52 @@ clear xj yj zj dxjk dyjk dzjk drjk
 length(find(Adist(:)>0)) % check 3223 
 
 %
- csvwrite( 'MarmosetDistPairs.csv',Adist); % save file
+% csvwrite( 'MarmosetDistPairs.csv',Adist); % save file
 %
 figure; hist(Adist(:), 100); hold on  % ~ skewedGaussian, peaks at 7, 11, 13 mm 
 title('MarmosetBrain: Link distances','Fontname','Times New Roman','FontSize',12,'FontWeight','Bold'); 
 axis([0.2 22.5 0 100])
 xlabel('link length (mm)','Fontname','Times','FontSize',12,'FontWeight','Bold') 
 ylabel('counts','Fontname','Times New Roman','FontSize',12,'FontWeight','Bold'); hold off
+  % looks log Normal 
+  
+%% 1.8.1 Calc LinkList of Wts (FLNe) & plot hist(log10)
+fprintf('\n Calc LinkList from rescaled Adj-new (LNe) \n')
+ % LinkList=csvread('MarmosetLinkList.csv'); % i-j-wt; 6325 entries, incl many 0's
+ % Or, calc from Adj:
+ LinkList=adj2edgeL(Anew); % Rescaled; finds 3474 links for 116 x 166 Adj
+% eliminate wt:0 
+posWts=find(LinkList(:,3)>0); % find the non-zero entries % 3474 of
+LinkList=LinkList(posWts,:);
+clear posWts
+[nl ~] =size(LinkList) % now 3474 non-0 wts
 
-%% 1.8.2 Calc LinkList of Wts 
-fprintf('\n Calc LinkList from Adj-full \n')
+% nb. Acrn-i, Acrn-j, wt] from .txt file & in LinkListACrn.csv
+wt=LinkList(:,3);
+figure; hist(wt,50); title('Marmoset rescaled LNe distribution  ')
+wtlog=log10(wt);
+figure; hist(wtlog,50)
+  %axis([-5.3 0 0 150]) % omit large peak at "0")
+title('Marmoset original log-10 wt (LNe) distribution  ')
+xlabel('log10 (weight, LNe)'); ylabel('Counts')
+ %  hh =gcf; print(hh, 'FigS3.tif', '-dtiff' , '-r300');
+ 
+
+% sort list of wt
+wts=LinkList(:,3);
+[wtsort, wtindex] = sort(wts);
+LinkListSort=LinkList(wtindex,:); % now sorted by raw wt (incrs)
+clear wts wtsort wtindex
+
+% Top 40% wt>= 0.0033 ~10^-2.48 (#2093-3474: 1382 Links)
+%LinkListT40=LinkList(2093:end, :);
+ %A40=edgeL2adj(LinkListT40); % no diag, Ok / missing 3 nodes?
+ %S=LinkList(:, 1);  S=unique(S); % 116 ok
+ %T=LinkList(:, 2);  T=unique(T); % 55, as before - 
+ 
+ % clear LinkList 
+%% 1.8.2 Alt.  Calc LinkList of Wts (FLNe) & plot hist(log10)
+fprintf('\n Calc LinkList from orig Adj-full \n')
  % LinkList=csvread('MarmosetLinkList.csv'); % i-j-wt; 6325 entries, incl many 0's
  % Or, calc from Adj:
  LinkList=adj2edgeL(Afull); % finds 3474 links for 116 x 166 Adj
@@ -435,9 +527,11 @@ wtlog=log10(wt);
 figure; hist(wtlog,50)
 axis([-5.3 0 0 150]) % omit large peak at "0")
 title('Marmoset original log-10 (FLNe) distribution  ')
-% clear LinkList
+xlabel('log10 (weight, FLNe)'); ylabel('Counts')
+ %  hh =gcf; print(hh, 'FigS3.tif', '-dtiff' , '-r300');
+ clear LinkList
 
-%% sort list of wt
+% sort list of wt
 wts=LinkList(:,3);
 [wtsort, wtindex] = sort(wts);
 LinkListSort=LinkList(wtindex,:); % now sorted by raw wt (incrs)
@@ -449,7 +543,6 @@ clear wts wtsort wtindex
  %S=LinkList(:, 1);  S=unique(S); % 116 ok
  %T=LinkList(:, 2);  T=unique(T); % 55, as before - 
  
- 
 %% need to do long-hand
 A40=zeros(116); % set up array
 for i=1:length(LinkListT40)
@@ -457,6 +550,7 @@ for i=1:length(LinkListT40)
 end
 
 %%  1.8.3 Calc Dist; & wt vs Dist
+% LinkList calc at #
 DistCol=zeros(length(LinkList),1);
 for i=1:nl
     dist=( (NodeCoord(LinkList(i,1),1)- NodeCoord(LinkList(i,2),1) )^2 ...
@@ -488,7 +582,7 @@ DistCol=LinkListDist(:,4);
 [wtsort, wtindex] = sort(DistCol);
 LinkListSortDist=LinkListDist(wtindex,:); % now sorted by d(i-j) (incrs);
  % max Dist is 22.65mm; nb #5941:6325 are NaN :no Injn ??
-clear wtsort wtindex DistCol
+clear wtsort wtindex % DistCol {is needed for plot}
 % now in dist-sorted order
 DistCol=LinkListSortDist(:,4);
 wts=LinkListSortDist(:,3);
@@ -535,14 +629,15 @@ title('Marmoset, compare FLNe vs Vols-Source*Target')
 xlabel('log(vol-T)   (mm^3)')  %xlabel('vol-Source (mm^3)')
 ylabel('log(FLNe)')
 
-%% 1.2.1 Plot LinkWts, FLNe vs Dist
- % calc DistCol at # 1.8.3, from LinkList [calc at #  
+%% 1.2.1 Plot LinkWts, LNe or FLNe vs Dist {for exp
+ % calc DistCol at # 1.8.3, from LinkList [calc at #  1.8.1 (LNe) or 1.8.2 (FLNe)
+ fprintf('\n Calc LinkList from rescaled Adj-new (LNe) \n')
 figure; %figure('position',figposition, 'units','pixels'); hold on; % big
 plot(DistCol, wtslog, '.', 'MarkerSize', 16); hold on
- title('Marmoset Brain log10(FLNe) vs ListDist(mm)  ')
+ title('Marmoset Brain log10(LNe) vs ListDist(mm)  ')
 %title('Marmoset Brain, link weight vs dist ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold')
 xlabel('dist(mm)','Fontname','Times','FontSize',14,'FontWeight','Bold') 
-ylabel('log10(FLNe wt) ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold');
+ylabel('log10(LNe wt) ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold');
  
 % highlight weakest wt (< 9e-6)
 for i=1:17  % fitst 17 pts in wt-ordered list
@@ -597,6 +692,72 @@ resLogWt(:)=wtslog(:) - (-2.019 - 0.0863*DistCol(:) );
 % residuals - in original-space (FLNe)
   % reswt=10.^resLogWt;
 
+  %% 1.2.1 Plot LinkWts, LNe or FLNe vs Dist {for exp fit
+ % calc DistCol at # 1.8.3, from LinkList [calc at #  1.8.1 (LNe) or 1.8.2 (FLNe)
+ fprintf('\n Plot Wt-Dist from rescaled Adj-new (LNe) \n')
+figure; %figure('position',figposition, 'units','pixels'); hold on; % big
+plot(DistCol, wtslog, '.', 'MarkerSize', 16); hold on
+ title('Marmoset Brain log10(LNe) vs ListDist(mm)  ')
+%title('Marmoset Brain, link weight vs dist ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold')
+xlabel('dist(mm)','Fontname','Times','FontSize',14,'FontWeight','Bold') 
+ylabel('log10(LNe wt) ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold');
+ 
+%% highlight weakest wt (< 9e-6) : for FLNe
+for i=1:17  % fitst 17 pts in wt-ordered list
+plot(DistCol(i), wtslog(i), '.', 'Color', 'red','MarkerSize', 16)
+end
+tmp=LinkListSortWt(1:17,:);
+% save S-T
+tmpS=cell(17,1);
+for i=1:17
+tmpS=Acrn{tmp(i,1)};
+tmpT=Acrn{tmp(i,2)};
+[tmpS tmpT]
+end
+clear tmp
+
+% highlight next group of weaker, wt (< 5e-5)
+for i=18:283  % fitst 17 pts in wt-ordered list
+plot(DistCol(i), wtslog(i), '.', 'Color', [1, 0.65, 0],'MarkerSize', 16) % orange
+end
+% top 40%, by wt is at cutoff 10^0.0033 : 1.0076
+%  ie. rows 2085:3474 : ie. 1390 links
+
+% drop 10% - ie. top 90% is rows 348:3474 
+
+ %% 1.2.1a Log-Log Plot LinkWts, LNe or FLNe vs Dist {for power law fit
+% nb. LinkListDist(:,3) is wt; LinkListDist(:,4) is dist
+ % calc DistCol at # 1.8.2or3, from LinkList [calc at #  1.8.1 (LNe) or 1.8.2 (FLNe)
+    % wtslog=log10(wts);  mean(wtslog) % now -2.80
+ fprintf('\n Plot Wt-Dist from rescaled Adj-new (LNe) \n')
+   % figure; plot(DistCol, wts) % debug
+DistLn=log(DistCol); WtsLn =log(wts);
+figure; %figure('position',figposition, 'units','pixels'); hold on; % big
+  % plot(DistCol, wtslog, '.', 'MarkerSize', 16); hold on % was log 10
+  %loglog(DistCol, wts); hold on
+  plot(DistLn, WtsLn, '.', 'MarkerSize', 16); hold on % now ln = log_e
+  %xlim([0.5 25])
+ title('Marmoset Cortex log_e(LNe) vs log_e(ListDist (mm))  ')
+%title('Marmoset Cortex, link weight vs dist ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold')
+xlabel('log_e(dist)  (mm)','Fontname','Times','FontSize',14,'FontWeight','Bold') 
+ylabel('log_e(LNe wt) ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold');
+xlim([-0.2 3.25])
+ % cftool: GUI for curve fitting
+  line ([0 3], [6.9   (6.9 - 2.0*3) ], 'Color', 'k', ...
+     'LineWidth', 1.5); % linear fit 6.9 -2.0*d(mm)
+ 
+ %% 1.2.1b Plot LinkWts, LNe vs Dist {+ exp fit)
+ % calc DistCol at # 1.8.3, from LinkList [calc at #  1.8.1 (LNe) or 1.8.2 (FLNe)
+ fprintf('\n Plot Wt-Dist from rescaled Adj-new (LNe) \n')
+figure; %figure('position',figposition, 'units','pixels'); hold on; % big
+plot(DistCol, WtsLn, '.', 'MarkerSize', 16); hold on
+ title('Marmoset Cortex: log_e(LNe) vs ListDist(mm)  ')
+%title('Marmoset Cortex, link weight vs dist ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold')
+xlabel('dist(mm)','Fontname','Times','FontSize',14,'FontWeight','Bold') 
+ylabel('log_e(LNe, wt) ','Fontname','Times New Roman','FontSize',14,'FontWeight','Bold');
+ line ([1 24], [4.77- 0.219  5.77 - 0.219*24], 'Color', 'k', ...
+     'LineWidth', 1.5); % linear fit 4.77 - 0.219d
+ 
 %% 1.3 node wt-Degree / Strength  :: nb. numbering out of order
 DegIn=sum(Afull,1)'; % i<-j;  col sum (1st index): produces a row % show as Col
 DegOut=sum(Afull,2); % i->j; row sum
@@ -660,7 +821,7 @@ DegOut1=sum(A1,2); % i->j; row sum
 figure; hist(DegIn1, 50)
 title('Marmoset DegIn of binarised links')
 axis([0 110 0 10]) % nb. big # at 0: not sampled
-%%
+%
 figure; hist(DegOut1, 50); hold on
 title('Marmoset DegOut of binarised links')
  %axis([0 80 0 130]); 
@@ -668,12 +829,12 @@ figure; stem (DegIn1, '.'); hold on
 stem (DegOut1, 'r.');
 legend('DegIn1', 'DegOut1')
 title('Marmoset Deg of binarised links')
-%% all
+% all
 figure; hist(DegIn1, 50); xlim([2 Inf]); hold on; 
 hist(DegOut1, 50, 'Color', 'r') % magenta
 ylim([0 20]);
 
-%% all - joint
+% all - joint p[lot
 figure; hist([DegIn1, DegOut1], 50); hold on % Fails, diff # in & out 
 title('Marmoset Distribution of in- and out-links'); legend('k-In', 'k-Out')
 %axis([1 110 0  20]) % omit large peaks at 0 
@@ -691,11 +852,17 @@ axis([1 110 0  20]) % omit large peaks at 0
 
 %% 1.3a.1 probe missing In-link info
 linkRatio=DegIn1./DegOut1;
-figure; stem(linkRatio, '.')
-figure; plot(linkRatio, '.') % lin fit dominated by 0's
+ % figure; stem(linkRatio, '.'); xlabel('Node # (all nodes')
+title('Marmoser (LNe) k-in/ k-out');
+figure; plot(linkRatio, '.','MarkerSize',18) % lin fit dominated by 0's
+xlabel('Node # (all nodes'); title('Marmoser (LNe) k-in/ k-out');
 linkRatNon=linkRatio(find(linkRatio)); % get the 55 non-zero ratios
-figure; plot(linkRatNon, '.') 
-title('Marmoset: #linksIn/#Out (non-0)  ')
+figure; plot(linkRatNon, '.','MarkerSize',18); xlabel('Node # (injection sites only'); hold on  
+title('Marmoset: #linksIn/#Out (non-0)  ');
+ text(11+1, 4.25, Acrn{11}); text(32+1, 4.68, Acrn{32}); text(33+1, 6.33, Acrn{33}); % label outliers
+figure; hist(linkRatNon, 50);  % skewed normal
+
+ clear linkRatio linkRatNon
 
 %% 1.3.2  wt/link distrn
 % wt/Link-In, per anatomical area (node)
@@ -725,7 +892,7 @@ plot(WtLinkOut , '.','MarkerSize',12); title('Marmoset, Wt-Deg-Out/ k-Out vs  No
  % typical range is xx wt/Link
 
 
-%% 1.4 form other LinkLists, from Adj - for InfoMap calc
+%% 1.4 form other LinkLists, with CutOffs, from Adj - for InfoMap calc
 % cf noTarget & noTarget lists at A.2.1, line 785.
 % for Ctx: 55 x 55 Source AND Target sites
  % cf. A.2.1, below, to find many missing Targets (116-52 of)
@@ -762,7 +929,7 @@ legend('DegIn1', 'DegOut1')
 title('Marmoset 55x55 Deg of binarised links')
 
 
-%% 2.0 LNe,1:  raw data, normalised to 1 mm^3 target vol
+%% 2.0 LNe,1:  raw data, Test:  normalised to 1 mm^3 target vol
  % 55 injn sites (targets)
  % cf XL workings %& calc:  Marmoset_raw1_2_sort.xlx
 LNe1=csvread('LNE1.csv');
@@ -823,20 +990,81 @@ for i=1:nl
     Anew(LinkListNew(i,1), LinkListNew(i,2))=LinkListNew(i,3);
 end
 
-%% 2.3 new wt Deg-In, Out (Strength)
+%% 2.3 new (LNe) wt Deg-In,Out (Strength)
 DegIn=sum(Anew,1)'; % i<-j;  col sum (1st index): produces a row % show as Col
 DegOut=sum(Anew,2); % i->j; row sum 
 figure; hist(DegIn); title('Marmoset rescaled wt-DegIn ')
 figure; hist(DegOut); hold on; title('Marmoset rescaled wt-DegOut '); hold off
 figure; plot(DegOut, DegIn, '.', 'MarkerSize', 9 ); title('marmoset: rescaled DegOut vs DegIn  ')
-% check: 1/LNe1(1,2) % this is DegIn(1) % ok
 
 figure; stem (DegIn, '.'); hold on  %  ~ "wt-DegIn"
 stem (DegOut, 'r.');  % wt-DegOut (LNe/mm^3 measure)
 legend('wt-DegIn', 'wt-DegOut'); title('Marmoset rescaled (LNe) wt-Deg-In,Out '); hold off 
 
-% frn still yileds all DegIn = 1  !!    
+ 
 
+%% 2.4.1 check extra 61 rows (FLNe):
+missingCols=[4:9, 12, 16:18, 20:24, 27:28, 33, 35:36, 49, 51:54, 58:60, 62:69 ...
+   73:74, 83:88, 90:95, 98:102, 104:106,109, 115,116]; % check 61 cols : 116-55 ok
+% for rows of non-targets
+fprintf('\n check non Targets for links, using FLNe')
+Anew61 = Afull(missingCols, :);
+ nLinks61= length(find(Anew61)) % 1611 links 
+ figure; spy(Anew61) % debug : 55 rows x 116 cols
+ DegIn61=sum(Anew61,1)'; % i<-j;  col sum (1st index): produces a row % show as Col
+  nIn61 = length(find(DegIn61)) % is 55 : # of Injn sites, ok 
+ DegOut61 = sum(Anew61,2); % i->j; row sum 
+ figure; stem(DegOut61); title('Marmoset (FLNe), missing links, wt-Deg-Out')
+   text(59+1, 1.33, Acrn{missingCols(59)}); text(33+1, 0.78, Acrn{missingCols(33)})
+   text(14+1, 0.62, Acrn{missingCols(14)}); text(7+1, 0.66, Acrn{missingCols(7)}) % label outliers
+ figure; stem(Anew61(59, :)); title('Marmoset (FLNe), missing links from V3, wt-Deg-Out')
+ figure; plot(log10(Anew61(59, :)))
+%%
+figure; stem(DegIn61); title('Marmoset (FLNe), missing links, wt-Deg-In')
+   text(61+1.5, 0.73, Acrn{61}); % is Injn
+   text(55-1, 0.59+0.02, Acrn{55}) % is Injn
+    text(11+1.5, 0.58, Acrn{11}); % is Injn
+    text(103+1.5, 0.53, Acrn{103}) % in Injn 
+%   
+ figure; subplot(2,1,1); hist(DegIn61); legend('wtDegIn'); ylabel('Counts')
+  subplot(2,1,2); hist(DegOut61); legend('wtDegOut'); xlabel('Link weight (FLNe)')
+  title('Marmoset (FLNe),wt Deg-In, Out ~ 61 non Targets')
+  %clear missingCols Anew61 nIn61 
+
+%% 2.4.1a #Links: un-wt Deg -  for 61 non-Targets
+fprintf('countf missing links ~ 61 non Targets')
+[sii sjj v]=find(A61);  
+Alogical=full(sparse(sii, sjj, 1));    % "mask" of selected entries, to re-form sq array of 1's.
+ % nb. need to use sparse to form the array
+A611 = Alogical.*1;  % pick out the selected entries; yields a "full" array
+ %figure; spy(A1)
+clear Alogical sii sjj v
+length(find(A611(:))) % check 3474 links: 
+ kIn61=sum(A611,1)'; % i<-j;  col sum (1st index): produces a row % show as Col
+ figure; stem(kIn61); %legend('k-In'); % 1611 : ok
+ title('Marmoset (FLNe), missing links, k-In')
+  nIn61 = sum(kIn61) % is 1611
+  nSources61 = length(find(kIn61)) % is 55: = # Injn sites
+ kOut61 = sum(A611,2); % i->j; row sum 
+      % sum(A611(1, :)) % debug  % =  38, correct, row sum ok
+ figure; stem(kOut61) ; %legend('k-Out');
+  title('Marmoset (FLNe), missing links, k-Out')
+ nOut61 = sum(kOut61) % 1611 : ok
+ 
+ clear nIn* nOut* nSou*
+ 
+%% 2.4.2 check extra 61 rows (LNe):
+missingCols=[4:9, 12, 16:18, 20:24, 27:28, 33, 35:36, 49, 51:54, 58:60, 62:69 ...
+   73:74, 83:88, 90:95, 98:102, 104:106,109, 115,116]; % check 61 cols : 116-55 ok
+fprintf('\n check non Targets for links, using LNe')
+% for rows of non-targets
+Anew61 = Anew(missingCols, :);
+ figure; spy(Anew61) % debug : 55 rows x 116 cols
+ DegOut61 = sum(Anew61,2); % i->j; row sum 
+ figure; stem(DegOut61)
+ 
+  clear missingCols Anew61
+  
 %% 3.0 symmetrise the 116 x 55 T <- S Adj
 % simple-minded symm. wt Adj
  %As= (tril(Afull) + triu(Afull') ); % symmetric, retain wt. / but looses too much data??
@@ -951,7 +1179,9 @@ end
 
 
 %  APPENDIX         APPENDIX         APPENDIX
-%% A.0 get RGB colours for areas: from Atlas files
+
+
+%% Appx.0 get RGB colours for areas: from Atlas files
  %NodeID=csvread('MarmosetAcrn139to116.csv'); % for the 116 Nodes (cf Links) vs 136 Labels
  % translates the full 139 List (Atlas) to the 116 nodes (Source Injn)
 tmp=csvread('Marmoset135LabelsRGB.csv'); % get listed ID-RGB for the 135/136 Labels
@@ -976,7 +1206,7 @@ NodeColors=csvread('Marmoset116NodesRGB.csv'); % read file, prev calc
 
 
 %  APPENDIX         APPENDIX         APPENDIX
-%% A.1 get Atlas files
+%% Appx.1 get Atlas files
 % need nifti Tools; code from MouseBrainV1-3.m
 % Atlas in sub-dir /marmoset_brain_template
 % get brain volume; nb. file needs to be in this dir
@@ -1000,7 +1230,7 @@ bvol=squeeze(bvol); size(bvol) %  825x63x550x3 : RGB 3D image, a 4-D array
  % bvmask=load_nii('atlas_mask.nii'); % this is 29MB file  
  % view_nii(bvmask); % shows "0" or "1" oursite, inside brain tissue
 
-%% A.1.1 3D vol of areas ID# - cf list in atlas_labels.txt: load into
+%% Appx.1.1 3D vol of areas ID# - cf list in atlas_labels.txt: load into
  % nb. 135 useful labels: find the 116 nodes amongst these
 % find CM of each area
 fprintf('\n >> Marmoset Brain: Atlas segmentation file \n')
@@ -1045,7 +1275,7 @@ clear thisArea ii ix jy kz thisCM CMmm vol
 tmp=(3*NodeVol/(4*pi) ).^0.333;  % radius
 NodeArea=4*pi*(tmp).^2;
 
-%% A.1.1  Tests: find coords of a single area: eg V1, V2: in pixel space
+%% Appx.1.1  Tests: find coords of a single area: eg V1, V2: in pixel space
  % check against online atlas browsers
  % Label ID's in MarmosetLinksNodes.xls [nb. skip of non-targets]
  
@@ -1460,7 +1690,8 @@ A = Afull(yesTarget, yesTarget); % pick the subset, from Target list: calc just 
 [n55 ~]=size(A) % finds 61 ??
 csvwrite('AdjMarmoset.csv', A); % save this calc. 
 
-%% noTarget=find( (Afull(1,:) ==0) & (Afull(40,:) ==0) & (Afull(78,:) ==0)  & (Afull(89,:) ==0))'; % by inspection
+%
+% noTarget=find( (Afull(1,:) ==0) & (Afull(40,:) ==0) & (Afull(78,:) ==0)  & (Afull(89,:) ==0))'; % by inspection
    % appears incomplete? (11/10/19)
 % hand checked: 64 missing: so 52 x 52 Adj
  AcrnNoTarget=cell(length(noTarget),1);

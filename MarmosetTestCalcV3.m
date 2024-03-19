@@ -1,10 +1,12 @@
-% bap: Marmoset brain: test calc on data  V3 (20/8/20)
+% bap: Marmoset brain: test calc on data  V3 (20/8/20 - 2/24)
 % based on: MarmosetReadDataV1.m (27/9/19) & V2 ('21)
-%    use updated data: Majka & Rosa, Nature Comm (2020);
+%    use updated data: Majka & Rosa, etc, Nature Comm (2020);
 %     & calc in XL: Marmoset_raw1_2_sort.xlsx 
    % V2. read prev  calc, cf V1, saved as Anew.mat
    % V3. clean up, with comments & list data files (2/24)
-% 0.01, 0.02 read data, info 
+
+% Code cells (sections)
+% 0.0, 0.01, 0.02 read data, info 
 % #0.1   read rawLN2.csv - data from XL workbook " ":  [ Node-Id, TotLN, LNe, LNi, Av-LNtot, Av-LNi] 
 %           Calc #LN(i-j) from raw data   & calc LNav ; that is "V2b" processing - cf Logbook
 
@@ -17,15 +19,18 @@
 %         ie.  Calc #LN(i-j) from raw LN data & FLNe; save/ read in as Anew;    
 %  1.0.1 read prev. calc of LN per target & Anew
 %  1.3 wt Degree (Strength)
+%  1.4 un-wt Deg (k) & 1.5 check dependencies (k)
+  % 1.8.3 Calc Dist(i-j); & wt vs Dist
  % 1.8.4a Plot LinkWts vs Dist for rescaled data: Fig S7 [out of order]
-% 2.0  Examine Hubs: links dist ( rescaled)
+
+% 2.0  Examine Hubs: links dist (rescaled)
 %  Appx. X.0, line 10097  Clustering coeff.
 %        X.1 Rich club calc.
 
 %   Data files: AdjFullMarmoset.csv, VolsMarmoset.csv, CoordsMarmoset.csv, InjnRepeats.csv, 
-%   MarmosetLabels139.csv, rawLN2.csv 
+%   MarmosetLabels139.csv, rawLN2.csv, rawLN2.csv  
 
-% >>>>   Set Up
+%% 0.0 >>>>   Set Up, read some data 
  %clear all; close all
  %addpath(genpath('/bap_working/MatLabfiles/MarmosetBrain')); % Data files;  include sub-directories 
   %addpath('/bap_working/MatLabfiles/MarmosetBrain/CodesOther'); % for other codes & dependencies
@@ -357,7 +362,7 @@ end
 % hh =gcf; print(hh, 'FigS5.tif', '-dtiff' , '-r300'); % for mss. Fig S5 
 
 
- %% for A10: linear trends?  2:7  % for A-10 : poor -too scattered??
+ %% Test plot for A10: linear trends?  2:7  % for A-10 : poor -too scattered??
 %figure; hold on;  xlim([0 1.4]);  ylim([0 2e4]); % fix scale
 %title('Marmoset A10:  LNe/ InjVol vs. TargetVol  ');
 %xlabel('Injection Vol (mm ^3 ) '); ylabel('Counts/(mm ^3 )');
@@ -378,7 +383,7 @@ end
     % >  p1 =  -2158  (-1.646e+04, 1.215e+04), ffit(x) = p1*x + p2 
      %   p2 =   7599  (-118.9, 1.532e+04) & 95% CI 
 %clear A10list
-%%  116:121 % for V1 
+%  116:121 % for V1 
 %figure; hold on;  xlim([0 1.4]);  ylim([0 2e4]); % fix scale
 %title('Marmoset V1:  LNe/ InjVol vs. TargetVol  ');
 %xlabel('Injection Vol (mm ^3 ) '); ylabel('Counts/(mm ^3 )');
@@ -397,7 +402,7 @@ end
     %   p2 =      -167.6  (-2757, 2422) % & 95% CI
  %hold off
  
-%%  57:61 % for A6Va  : too cluttered near origin, small spread
+%  57:61 % for A6Va  : too cluttered near origin, small spread
 %figure; hold on;  xlim([0 1.4]);  ylim([0 2e4]); % fix scale
 %title('Marmoset V1:  LNe/ InjVol vs. TargetVol  ');
 %xlabel('Injection Vol (mm ^3 ) '); ylabel('Counts/(mm ^3 )');
@@ -416,7 +421,7 @@ end
     %   p2 =       581.6  (-7116, 8279) % & 95% CI
  %hold off  
 
-%% 122:128 & 130 % for V2, 
+% 122:128 & 130 % for V2, 
  % omit worst oulier 
 %figure; hold on;  xlim([0 1.4]);  ylim([0 2e4]); % fix scale
 %title('Marmoset V1:  LNe/ InjVol vs. TargetVol  ');
@@ -498,7 +503,7 @@ mdl1a.Rsquared
 
 % >>.    >   >   >   >
 
-%% 1.0 calc new Adj, using LNe per target
+%% 1.0 trial calc new Adj, using LNe per target
 fprintf('\n Calc #LN(i-j) from raw LN data & FLNe \n')
  % calc LNav at #0.1, above   checked (19/2/24)
   % LNav is LNi,e,tot : 3 cols x 116 rows (nodes)
@@ -585,14 +590,14 @@ logDegIn=log(DegIn); logDegOut=log(DegOut);
 figure; hist(logDegIn, logDegOut, 50)
 pd = fitdist(DegIn,'exponential')
 scale = 68/DegInFit(1)
- %% [min(DegIn) max(DegIn) ] % get scale 
+ % [min(DegIn) max(DegIn) ] % get scale 
 DegInAxis=linspace(0,  max(DegIn), 50);
 DegInFit = pdf(pd, DegInAxis );
 figure; plot(DegInAxis, DegInFit)
 plot(DegInAxis, scale*DegInFit, 'k-')
 title('Marmoset rescaled Strength: wt-DegIn '); 
 legend('wt-DegIn', 'exp fit');  
-%%
+%
 pd = fitdist(DegOut,'exponential')
 DegOutAxis=linspace(0,  max(DegOut), 50);
 DegOutFit = pdf(pd, DegOutAxis );
@@ -652,7 +657,7 @@ clear wt1 LinkList LinkList1
  % figure; spy(A1) % 1948 entries: banded & v sparse
  length(find(A1(:)) )
 
- %% 1.5 check dependencies K
+ %% 1.5 check dependencies K (# links)
 figure; plot(NodeVols, kIn1, '.', 'MarkerSize', 11);
  title('Marmoset degree (k-In) vs Node vol ') 
   % linear
@@ -770,7 +775,6 @@ for i=1:3474
 end
 
 
-
 %%  1.8.3 Calc Dist; & wt vs Dist
  % NodeCoord read in at #0,03 above
  NodeCoord=csvread('CoordsMarmoset.csv'); % nb. some absent: NaN 
@@ -839,7 +843,7 @@ figure; plot(DistCol, wtslog, '.', 'MarkerSize', 14);
 % exp fit
  wtsln=log(wts); Distln = log(DistCol);
 figure; plot(DistCol, wtsln, '.', 'MarkerSize', 14); 
- % lin fir = 4.8 - 0.22 x 
+ % lin fit = 4.8 - 0.22 x 
  % fitLogWt = fit(DistCol, wtsln, 'poly1')
  % cftool(DistCol, wtsln) % app interface  : R^2 = 0.16, big scatter
  %% log - log fit
